@@ -65,32 +65,95 @@ const cardNumberPattern = {
         },
     ],
     dispatch: function (appended, dynamicMasked) {
-        const number = (dynamicMasked.value + appended).replace(/\D/g,"")
-        const foundMask = dynamicMasked.compiledMask.find(function(item){
-           
-            return number.match(item.regex)
+        const number = (dynamicMasked.value + appended).replace(/\D/g, '');
+        const foundMask = dynamicMasked.compiledMasks.find(item => {
+          return number.match(item.regex);
 
-        })
+        });
         
-        return foundMask
+        return foundMask;
     },
 }
 
-const cardNumberMasked = IMask(cardNumber, cardNumberPattern)
+const cardNumberMasked = IMask(cardNumber, cardNumberPattern);
 
-addButton = document.querySelector ("#add-card")
-addButton.addEventListener("click",() => {
-    alert("Cartão Adicionado")
+cardNumberMasked.on('accept', () => {
+  const ccNumber = document.querySelector('.cc-number');
+  ccNumber.innerText = cardNumberMasked.value || '1234 5678 9012 3456';
 
-})
+  const cardType = cardNumberMasked.masked.currentMask.cardtype;
+  setCardType(cardType);
+});
 
-document.querySelector("form").addEventListener("submit", (event) => {
-    event.preventDefault()
-})
+document
+  .querySelector('form')
+  .addEventListener('submit', event => event.preventDefault());
 
-const cardHolder = document.querySelector ("#card-holder")
-cardHolder.addEventListener("input", () => {
-    const ccHolder = document.querySelector(".cc-holder .value")
+const addCardButton = document.querySelector('#add-card');
+addCardButton.addEventListener('click', event => {
+  console.log('clicou');
+  addCard();
+});
 
-    ccHolder.innerText = cardHolder.value
-})
+const cardHolder = document.querySelector('#card-holder');
+cardHolder.addEventListener('input', () => {
+  ccHolder.innerText = cardHolder.value.substr(0, 22) || defaultNameHolder;
+});
+
+function addCard() {
+  const completed =
+    cardNumberMasked.value &&
+    expirationDateMasked.value &&
+    securityCodeMasked.value &&
+    cardHolder.value;
+
+  if (!completed) {
+    showMessage('Informe os dados do cartão', 'Dados Incompletos');
+    return;
+  }
+
+  const cardData = {
+    'card holder': cardHolder.value,
+    'card number': cardNumberMasked.value,
+    'security code': securityCodeMasked.value,
+    'expiration date': expirationDateMasked.value,
+    flag: cardNumberMasked.masked.currentMask.cardtype,
+  };
+
+  console.log(cardData);
+  //alert('cartão adicionado!');
+  showMessage('Seu cartão foi adicionado!');
+  clearCardForm();
+}
+
+function clearCardForm() {
+  cardNumberMasked.value = '';
+  securityCodeMasked.value = '';
+  expirationDateMasked.value = '';
+  cardHolder.value = '';
+  ccHolder.innerText = defaultNameHolder;
+}
+
+globalThis.clearForm = clearCardForm;
+
+const modalDialog = document.querySelector('dialog');
+const modalMessage = document.querySelector('dialog form p');
+const modalTitle = document.querySelector('dialog form h3');
+function showMessage(message, title) {
+  modalTitle.innerText = title || 'Rocketpay';
+  modalMessage.innerText = message;
+
+  const modalNotVisible = !modalDialog.checkVisibility();
+  if (modalNotVisible) modalDialog.showModal();
+}
+globalThis.showMessage = showMessage;
+
+const tiltCard = document.querySelector('.cc');
+const tiltConfig = {
+  max: 18, // max tilt rotation (degrees)
+  speed: 600, // Speed of the enter/exit transition
+  gyroscope: true, // Boolean to enable/disable device orientation detection,
+  'full-page-listening': false,
+};
+
+VanillaTilt.init(tiltCard, tiltConfig);
